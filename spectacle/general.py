@@ -4,6 +4,24 @@ import numpy as np
 import warnings
 
 
+def apply_to_multiple_args(func, data, *args, **kwargs):
+    """
+    Apply `func` to any number of elements in `data`
+    Return the result, as a list if `data` had multiple elements, or as a single
+    element if `data` had only one element.
+
+    Any *args and **kwargs are passed to `func` on every call.
+    """
+    # Apply func to each element
+    results = [func(data_element, *args, **kwargs) for data_element in data]
+
+    # If only a single element was given, don't return a list
+    if len(results) == 1:
+        results = results[0]
+
+    return results
+
+
 def gauss_filter(D, sigma=5, **kwargs):
     """
     Apply a 1-D Gaussian kernel along one axis.
@@ -26,6 +44,27 @@ def gauss_nan(D, sigma=5, **kwargs):
 
     Z=VV/WW
     return Z
+
+
+def _gauss_generic(data_element, **kwargs):
+    """
+    Apply a multidimensional Gaussian kernel, accounting for NaN values
+    if necessary.
+    Select `gaussMd` or `gauss_nan` depending on if NaN data are present
+    in the given `data_element`.
+    """
+    func = gauss_nan if np.isnan(data_element).any() else gaussMd
+    return func(data_element, **kwargs)
+
+
+def gauss_filter_multidimensional(*data, sigma=5, **kwargs):
+    """
+    Apply a Gaussian convolution to any number of data elements in `data`,
+    accounting for NaN values if they are present.
+    """
+    data_gauss = apply_to_multiple_args(_gauss_generic, data, sigma=sigma, **kwargs)
+
+    return data_gauss
 
 
 def blackbody(wavelengths, temperature=5777, norm=1):
@@ -143,24 +182,6 @@ def return_with_filename(to_return, filename, return_filename=False):
         return to_return, filename
     else:
         return to_return
-
-
-def apply_to_multiple_args(func, data, *args, **kwargs):
-    """
-    Apply `func` to any number of elements in `data`
-    Return the result, as a list if `data` had multiple elements, or as a single
-    element if `data` had only one element.
-
-    Any *args and **kwargs are passed to `func` on every call.
-    """
-    # Apply func to each element
-    results = [func(data_element, *args, **kwargs) for data_element in data]
-
-    # If only a single element was given, don't return a list
-    if len(results) == 1:
-        results = results[0]
-
-    return results
 
 
 def deprecation(message):
